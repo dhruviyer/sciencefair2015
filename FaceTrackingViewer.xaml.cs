@@ -556,7 +556,6 @@ namespace FaceTrackingBasics
                         }
                     }
                     //Console.WriteLine("Iteration Complete");
-                    //Test committment
                     switch (commandtoSend)
                     {
                         case 0:
