@@ -147,9 +147,9 @@ namespace FaceTrackingBasics
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Jaw_InputData.txt", true))
             {
                 RotationTextBlock.Text = "Please Wait...";
-                file.WriteLine((TargetTextBlock.Text.ToString()+"," + faceTrackingViewer.returnRotationX().ToString()+","+faceTrackingViewer.returnRotationY().ToString()+","+faceTrackingViewer.returnRotationZ().ToString()));
+                file.WriteLine((TargetTextBlock.Text.ToString() + "," + faceTrackingViewer.returnRotationX().ToString() + "," + faceTrackingViewer.returnRotationY().ToString() + "," + faceTrackingViewer.returnRotationZ().ToString()));
                 //file.WriteLine(TargetTextBlock.Text.ToString() + ","  +faceTrackingViewer.returnRotationX().ToString());
-                Console.WriteLine("Data Logged: "  +    " [" + logCounter + "]");
+                Console.WriteLine("Data Logged: " + " [" + logCounter + "]");
                 RotationTextBlock.Text = "Ready.";
                 logCounter++;
             }
