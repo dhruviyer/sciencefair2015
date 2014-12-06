@@ -127,31 +127,18 @@ namespace FaceTrackingBasics
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            /*
+            
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Jaw_InputData.txt", true))
             {
-                if (e.Key == System.Windows.Input.Key.Enter)
-                {
-                    //System.IO.File.WriteAllText(@"C:\Users\Bala\Desktop\Jaw_InputData.txt", ("0 , "+ faceTrackingViewer.returnJawData().ToString()));
-                    RotationTextBlock.Text = "Please Wait...";
-                    file.WriteLine(("1 , " + faceTrackingViewer.returnJawData().ToString()));
-                    Console.WriteLine("Data Logged: " + faceTrackingViewer.returnJawData().ToString() + " [" + logCounter + "]");
-                    RotationTextBlock.Text = "Ready.";
-                    logCounter++;
-                }
-            }*/
+                
+            }
         }
 
         private void logCommand_Click(object sender, RoutedEventArgs e)
         {
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Jaw_InputData.txt", true))
             {
-                RotationTextBlock.Text = "Please Wait...";
-                file.WriteLine((TargetTextBlock.Text.ToString()+"," + faceTrackingViewer.returnRotationX().ToString()+","+faceTrackingViewer.returnRotationY().ToString()+","+faceTrackingViewer.returnRotationZ().ToString()));
-                //file.WriteLine(TargetTextBlock.Text.ToString() + ","  +faceTrackingViewer.returnRotationX().ToString());
-                Console.WriteLine("Data Logged: "  +    " [" + logCounter + "]");
-                RotationTextBlock.Text = "Ready.";
-                logCounter++;
+               
             }
         }
 

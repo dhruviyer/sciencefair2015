@@ -76,10 +76,15 @@ namespace FaceTrackingBasics
         const uint KEYEVENTF_KEYUP = 0x0002;
         const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
 
+        static IPEndPoint myapp;
+        static IPEndPoint glovepie;
+        static OscMessage msg;
         public FaceTrackingViewer()
         {
             this.InitializeComponent();
-
+            OscPacket.LittleEndianByteOrder = false;
+            myapp = new IPEndPoint(IPAddress.Loopback, 1944);
+            glovepie = new IPEndPoint(IPAddress.Loopback, 1945);
         }
 
         ~FaceTrackingViewer()
@@ -294,41 +299,11 @@ namespace FaceTrackingBasics
 
             EnumIndexableCollection<AnimationUnit, float> AUCoeff;
 
-            float jawLowererAU;
-
-            float lipStretcherAU;
-
-            float browRaiserAU;
-
-            static float jawData;
-
-            Vector3DF leftForehead;
-
-            Vector3DF rightForehead;
-
-            Vector3DF jaw;
-
-            static float faceRotationX;
-
-            static float faceRotationY;
-
-            static float faceRotationZ;
-
             double nnoutput;
-
-            float foreheadReferencePointY;
-
-            float foreheadReferencePointZ;
-
-            float foreheadReferencePointX;
 
             int resultsCounter = 0;
 
             int commandtoSend = 0;
-
-            OscMessage msg;
-
-            float[] rotations;
 
             object result;
 
@@ -414,313 +389,14 @@ namespace FaceTrackingBasics
 
                     //Assign Reference points
                     this.absfacePoints = frame.Get3DShape();
-                    leftForehead = this.absfacePoints[FeaturePoint.TopLeftForehead];
-                    rightForehead = this.absfacePoints[FeaturePoint.TopRightForehead];
-                    jaw = this.absfacePoints[FeaturePoint.BottomOfChin];
-                    faceRotationX = frame.Rotation.X;
-                    faceRotationY = frame.Rotation.Y;
-                    faceRotationZ = frame.Rotation.Z;
 
-                    //Calculate Reference Points
-                    foreheadReferencePointX = ((rightForehead.X - leftForehead.X) / 2);
-                    foreheadReferencePointY = ((rightForehead.Y - leftForehead.Y) / 2);
-                    foreheadReferencePointZ = ((rightForehead.Z - leftForehead.Z) / 2);
 
-                    //Set Animation Units
-                    AUCoeff = frame.GetAnimationUnitCoefficients();
-                    jawLowererAU = AUCoeff[AnimationUnit.JawLower];
-                    lipStretcherAU = AUCoeff[AnimationUnit.LipStretcher];
-                    browRaiserAU = AUCoeff[AnimationUnit.BrowRaiser];
-                    setJawData(jaw.Y, leftForehead.Y, rightForehead.Y, jawLowererAU, lipStretcherAU);
 
-                    rotations = new float[5];
                     //set up matlab
                     matlab = new MLApp.MLApp();
                     matlab.Execute(@"cd C:\Users\Bala\Documents\MATLAB");
                     result = null;
 
-                    //get rotation values
-                    rotations[0] = faceRotationX;
-                    rotations[1] = faceRotationY;
-                    rotations[2] = faceRotationZ;
-                    rotations[3] = jawLowererAU;
-                    rotations[4] = lipStretcherAU;
-                    //Set up GlovePie
-                    OscPacket.LittleEndianByteOrder = false;
-                    IPEndPoint myapp = new IPEndPoint(IPAddress.Loopback, 1944);
-                    IPEndPoint glovepie = new IPEndPoint(IPAddress.Loopback, 1945);
-                    Console.WriteLine(browRaiserAU);
-                    
-                    matlab.Feval("nnW", 1, out result, rotations[0]);
-                    object[] resW = result as object[];
-                    nnoutput = (int)((float)resW[0] + 0.5f);
-                    if (nnoutput == 1)
-                    {
-                        commandtoSend = 1;
-                    }
-                    else
-                    {
-                        result = null;
-                        matlab.Feval("nnA", 1, out result, rotations[1]);
-                        object[] resA = result as object[];
-                        nnoutput = (int)((float)resA[0] + 0.5f);
-                        if (nnoutput == 1)
-                        {
-                            commandtoSend = 2;
-                        }
-                        else
-                        {
-                            result = null;
-                            matlab.Feval("nnS", 1, out result, rotations[0]);
-                            object[] resS = result as object[];
-                            nnoutput = (int)((float)resS[0] + 0.5f);
-                            if (nnoutput == 1)
-                            {
-                                commandtoSend = 3;
-                            }
-                            else
-                            {
-                                result = null;
-                                matlab.Feval("nnd", 1, out result, rotations[1]);
-                                object[] resD = result as object[];
-                                nnoutput = (int)((float)resD[0] + 0.5f);
-                                if (nnoutput == 1)
-                                {
-                                    commandtoSend = 4;
-                                }
-                                else
-                                {
-                                    result = null;
-                                    matlab.Feval("nnLC", 1, out result, rotations[2]);
-                                    object[] resLC = result as object[];
-                                    nnoutput = (int)((float)resLC[0] + 0.5f);
-                                    if (nnoutput == 1)
-                                    {
-                                        commandtoSend = 5;
-                                    }
-                                    else
-                                    {
-                                        result = null;
-                                        matlab.Feval("nnRC", 1, out result, rotations[2]);
-                                        object[] resRC = result as object[];
-                                        nnoutput = (int)((float)resRC[0] + 0.5f);
-                                        if (nnoutput == 1)
-                                        {
-                                            commandtoSend = 6;
-                                        }
-                                        else
-                                        {
-                                            result = null;
-                                            if (jawLowererAU > 0.7)
-                                            {
-                                                commandtoSend = 7;
-                                            }
-                                            /*
-                                            matlab.Feval("nnSpace", 1, out result, rotations[3]);
-                                            object[] resSpace = result as object[];
-                                            nnoutput = (int)((float)resSpace[0] + 0.5f);
-                                            if (nnoutput == 1)
-                                            {
-                                                commandtoSend = 7;
-                                            }*/
-                                            else
-                                            {
-                                                result = null;
-                                                if (browRaiserAU > 0.4)
-                                                {
-                                                    commandtoSend = 8;
-                                                }
-                                                else
-                                                {
-                                                    result = null;
-                                                    commandtoSend = 0;
-                                                }
-                                                /*result = null;
-                                                matlab.Feval("nnMiddle", 1, out result, lipStretcherAU);
-                                                object[] resMiddle = result as object[];
-                                                nnoutput = (int)((float)resMiddle[0] + 0.5f);
-                                                if (nnoutput == 1)
-                                                {
-                                                    commandtoSend = 8;
-                                                }
-                                                else
-                                                {
-                                                    result = null;
-                                                    commandtoSend = 0;
-                                                }*/
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    //Console.WriteLine("Iteration Complete");
-                    switch (commandtoSend)
-                    {
-                        case 0:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 1:
-                            msg = new OscMessage(myapp, "/move/w", 10.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 2:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 10.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 3:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 10.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 4:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 10.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 5:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 10.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 6:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 10.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 7:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 10.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 0.0f);
-                            msg.Send(glovepie);
-                            break;
-                        case 8:
-                            msg = new OscMessage(myapp, "/move/w", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/a", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/s", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/d", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/lc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/rc", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/space", 0.0f);
-                            msg.Send(glovepie);
-                            msg = new OscMessage(myapp, "/move/middle", 10.0f);
-                            msg.Send(glovepie);
-                            break;
-                    }
-
-                    //LOLOLOLOLOL
                 }
             }
 
@@ -731,30 +407,172 @@ namespace FaceTrackingBasics
                 public Point P3;
             }
 
-            public void setJawData(float jawDatatoSet, float leftForeheadData, float rightForeheadData, float jawAnim, float lipStretcher)
+            public void sendCommand(int commandtoSend)
             {
-                //jawData = Math.Abs(jawDatatoSet - ((rightForeheadData + leftForeheadData) / 2));
-                jawData = lipStretcher;
-            }
+                switch (commandtoSend)
+                {
+                    case 0:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 1:
+                        msg = new OscMessage(myapp, "/move/w", 10.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 2:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 10.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 3:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 10.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 4:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 10.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 5:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 10.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 6:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 10.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 7:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 10.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 0.0f);
+                        msg.Send(glovepie);
+                        break;
+                    case 8:
+                        msg = new OscMessage(myapp, "/move/w", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/a", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/s", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/d", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/lc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/rc", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/space", 0.0f);
+                        msg.Send(glovepie);
+                        msg = new OscMessage(myapp, "/move/middle", 10.0f);
+                        msg.Send(glovepie);
+                        break;
+                }
 
-            public float getJawData()
-            {
-                return jawData;
-            }
-
-            public float getRotationX()
-            {
-                return faceRotationX;
-            }
-
-            public float getRotationY()
-            {
-                return faceRotationY;
-            }
-
-            public float getRotationZ()
-            {
-                return faceRotationZ;
             }
         }
 
@@ -770,21 +588,5 @@ namespace FaceTrackingBasics
             }
         }
 
-        public float returnJawData()
-        {
-            return skeletonFaceTracker.getJawData();
-        }
-        public float returnRotationX()
-        {
-            return skeletonFaceTracker.getRotationX();
-        }
-        public float returnRotationY()
-        {
-            return skeletonFaceTracker.getRotationY();
-        }
-        public float returnRotationZ()
-        {
-            return skeletonFaceTracker.getRotationZ();
-        }
     }
 }
