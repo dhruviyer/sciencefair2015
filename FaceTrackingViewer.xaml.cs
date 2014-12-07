@@ -299,13 +299,13 @@ namespace FaceTrackingBasics
 
             EnumIndexableCollection<AnimationUnit, float> AUCoeff;
 
-            double nnoutput;
-
-            int resultsCounter = 0;
-
             int commandtoSend = 0;
 
-            object result;
+            string result;
+            
+            List<String> numbersOnly;
+           
+            double[] inputarray;
 
             private EnumIndexableCollection<FeaturePoint, Vector3DF> absfacePoints;
 
@@ -364,7 +364,7 @@ namespace FaceTrackingBasics
 
             public void OnFrameReady(KinectSensor kinectSensor, ColorImageFormat colorImageFormat, byte[] colorImage, DepthImageFormat depthImageFormat, short[] depthImage, Skeleton skeletonOfInterest)
             {
-                //No Touchy
+                //Don't Touch
                 this.skeletonTrackingState = skeletonOfInterest.TrackingState;
                 if (this.skeletonTrackingState != SkeletonTrackingState.Tracked)
                 {
@@ -382,21 +382,31 @@ namespace FaceTrackingBasics
                         faceTriangles = frame.GetTriangles();
                     }
                     this.facePoints = frame.GetProjected3DShape();
+                
+                //Okay to touch
 
-
-
-                    //Touchy 
-
-                    //Assign Reference points
-                    this.absfacePoints = frame.Get3DShape();
-
-
-
-                    //set up matlab
+                    numbersOnly = new List<string>();
+                    inputarray = new double[] { 0, 0 }; //this is just a test matrix, the real one will contain all face points
                     matlab = new MLApp.MLApp();
-                    matlab.Execute(@"cd C:\Users\Bala\Documents\MATLAB");
-                    result = null;
+                    matlab.PutWorkspaceData("input", "base", inputarray);
 
+                    result = (matlab.Execute("simpleNN(transpose(input))")); 
+
+                    char[] delimiters = new char[] { };
+                    string[] parts = result.Split(delimiters,
+                             StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0; i < parts.Length; i++)
+                    {
+                        if (parts[i].Equals("ans")) { }
+                        else if (parts[i].Equals("=")) { }
+                        else { numbersOnly.Add(parts[i]); }
+                    }
+                    foreach (string str in numbersOnly)
+                    {
+                        float x = float.Parse(str);
+                        Console.WriteLine(x);
+                    }
+               
                 }
             }
 
