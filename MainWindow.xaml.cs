@@ -125,21 +125,11 @@ namespace FaceTrackingBasics
             }
         }
 
-        private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-        {
-            
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Jaw_InputData.txt", true))
-            {
-                
-            }
-        }
-
+        private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e){}
+        
         private void logCommand_Click(object sender, RoutedEventArgs e)
         {
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Jaw_InputData.txt", true))
-            {
-               
-            }
+            faceTrackingViewer.writeFile(Int32.Parse(TargetTextBlock.Text));
         }
 
     }

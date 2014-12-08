@@ -302,10 +302,12 @@ namespace FaceTrackingBasics
             int commandtoSend = 0;
 
             string result;
-            
+
             List<String> numbersOnly;
-           
+
             double[] inputarray;
+
+            Vector3DF topSkull;
 
             private EnumIndexableCollection<FeaturePoint, Vector3DF> absfacePoints;
 
@@ -382,9 +384,12 @@ namespace FaceTrackingBasics
                         faceTriangles = frame.GetTriangles();
                     }
                     this.facePoints = frame.GetProjected3DShape();
-                
-                //Okay to touch
 
+                    //Okay to touch
+                    absfacePoints = frame.Get3DShape();
+                    topSkull = absfacePoints[FeaturePoint.TopSkull];
+
+                    /*
                     numbersOnly = new List<string>();
                     inputarray = new double[] { 0, 0 }; //this is just a test matrix, the real one will contain all face points
                     matlab = new MLApp.MLApp();
@@ -406,8 +411,9 @@ namespace FaceTrackingBasics
                         float x = float.Parse(str);
                         Console.WriteLine(x);
                     }
-               
-                }
+               */
+                    
+                } 
             }
 
             private struct FaceModelTriangle
@@ -584,6 +590,58 @@ namespace FaceTrackingBasics
                 }
 
             }
+
+            public void writeFaceDataToFile(int number)
+            {
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Sophomore\Science Fair\Development and Optimization\Kinect\FaceData.txt", true))
+                {
+                    if (topSkull != null)
+                    {
+                        for (int absFaceCounter = 0; absFaceCounter < absfacePoints.Count; absFaceCounter++)
+                        {
+                            float xCoords = absfacePoints[absFaceCounter].X - topSkull.X;
+                            float yCoords = absfacePoints[absFaceCounter].X - topSkull.X;
+                            float zCoords = absfacePoints[absFaceCounter].X - topSkull.X;
+                            file.Write(xCoords + " " + yCoords + " " + zCoords+" ");       
+                        }
+                        file.WriteLine();
+                        Console.WriteLine("Data Logged");
+                    }
+                }
+                using (System.IO.StreamWriter TargetFile = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Sophomore\Science Fair\Development and Optimization\Kinect\Targets.txt", true))
+                {
+                    switch (number)
+                    {
+                        case 0: //nothing
+                            TargetFile.WriteLine("1 0 0 0 0 0 0 0 0");
+                            break;
+                        case 1: //w
+                            TargetFile.WriteLine("0 1 0 0 0 0 0 0 0");
+                            break;
+                        case 2: //a
+                            TargetFile.WriteLine("0 0 1 0 0 0 0 0 0");
+                            break;
+                        case 3: //s
+                            TargetFile.WriteLine("0 0 0 1 0 0 0 0 0");
+                            break;
+                        case 4: //d
+                            TargetFile.WriteLine("0 0 0 0 1 0 0 0 0");
+                            break;
+                        case 5: //lc
+                            TargetFile.WriteLine("0 0 0 0 0 1 0 0 0");
+                            break;
+                        case 6: //rc
+                            TargetFile.WriteLine("0 0 0 0 0 0 1 0 0");
+                            break;
+                        case 7: //space
+                            TargetFile.WriteLine("0 0 0 0 0 0 0 1 0");
+                            break;
+                        case 8: //middle mouse
+                            TargetFile.WriteLine("0 0 0 0 0 0 0 0 1");
+                            break;
+                    }
+                }
+            }
         }
 
         private void UserControl_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -598,5 +656,9 @@ namespace FaceTrackingBasics
             }
         }
 
+        public void writeFile(int number2)
+        {
+            skeletonFaceTracker.writeFaceDataToFile(number2);
+        }
     }
 }
