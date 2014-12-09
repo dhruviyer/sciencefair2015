@@ -299,8 +299,6 @@ namespace FaceTrackingBasics
 
             EnumIndexableCollection<AnimationUnit, float> AUCoeff;
 
-            int commandtoSend = 0;
-
             string result;
 
             List<String> numbersOnly;
@@ -309,9 +307,13 @@ namespace FaceTrackingBasics
 
             Vector3DF topSkull;
 
-            int logCounter = 0;
+            int commandToSend = 0;
 
-            int inputArrayCounter = 0;
+            int logCounter = 0; //keeps track of how many points you have logged during targeting
+
+            int inputArrayCounter = 0; //keeps track of the index for the input array. it is incremented and serves to determine the index of input aray that a particular data point will be set to.
+
+            int commandCounter = 0; //used to determine which command should be selected
 
             private EnumIndexableCollection<FeaturePoint, Vector3DF> absfacePoints;
 
@@ -381,6 +383,7 @@ namespace FaceTrackingBasics
                 frame = this.faceTracker.Track(
                          colorImageFormat, colorImage, depthImageFormat, depthImage, skeletonOfInterest);
                 this.lastFaceTrackSucceeded = frame.TrackSuccessful;
+
                 if (this.lastFaceTrackSucceeded)
                 {
                     if (faceTriangles == null)
@@ -390,9 +393,9 @@ namespace FaceTrackingBasics
                     this.facePoints = frame.GetProjected3DShape();
 
                     //Okay to touch
+
                     absfacePoints = frame.Get3DShape();
                     topSkull = absfacePoints[FeaturePoint.TopSkull];
-
 
                     numbersOnly = new List<string>();
                     inputarray = new float[363];
@@ -418,9 +421,9 @@ namespace FaceTrackingBasics
 
                     matlab = new MLApp.MLApp();
                     matlab.PutWorkspaceData("input", "base", inputarray);
-                    
-                    //result = (matlab.Execute("simpleNN(transpose(input))"));
-                    /*
+
+                    result = (matlab.Execute("fullPointsNN(transpose(input))"));
+
                     char[] delimiters = new char[] { };
                     string[] parts = result.Split(delimiters,
                              StringSplitOptions.RemoveEmptyEntries);
@@ -433,9 +436,19 @@ namespace FaceTrackingBasics
                     foreach (string str in numbersOnly)
                     {
                         float x = float.Parse(str);
-                        Console.WriteLine(x);
+                        x += 0.5f;
+                        if ((int)x == 0)
+                        {
+                            commandCounter++; //don't send this command
+                        }
+                        else
+                        {
+                            commandToSend = commandCounter;
+                            Console.WriteLine(commandToSend); //Later I'll put in the send command, for now just print it out
+                        }
                     }
-                    */
+                    commandCounter = 0; //reset command counter for next run
+
 
                 }
             }
