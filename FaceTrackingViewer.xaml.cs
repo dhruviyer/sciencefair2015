@@ -305,9 +305,13 @@ namespace FaceTrackingBasics
 
             List<String> numbersOnly;
 
-            double[] inputarray;
+            float[] inputarray;
 
             Vector3DF topSkull;
+
+            int logCounter = 0;
+
+            int inputArrayCounter = 0;
 
             private EnumIndexableCollection<FeaturePoint, Vector3DF> absfacePoints;
 
@@ -389,14 +393,34 @@ namespace FaceTrackingBasics
                     absfacePoints = frame.Get3DShape();
                     topSkull = absfacePoints[FeaturePoint.TopSkull];
 
-                    /*
+
                     numbersOnly = new List<string>();
-                    inputarray = new double[] { 0, 0 }; //this is just a test matrix, the real one will contain all face points
+                    inputarray = new float[363];
+
+                    if (topSkull != null)
+                    {
+                        for (int FacePointsCounter = 0; FacePointsCounter < absfacePoints.Count; FacePointsCounter++)
+                        {
+                            float xCoords = absfacePoints[FacePointsCounter].X - topSkull.X;
+                            float yCoords = absfacePoints[FacePointsCounter].X - topSkull.X;
+                            float zCoords = absfacePoints[FacePointsCounter].X - topSkull.X;
+
+                            inputarray[inputArrayCounter] = xCoords;
+                            inputArrayCounter++;
+                            inputarray[inputArrayCounter] = yCoords;
+                            inputArrayCounter++;
+                            inputarray[inputArrayCounter] = zCoords;
+                            inputArrayCounter++;
+
+                        }
+                        inputArrayCounter = 0;
+                    }
+
                     matlab = new MLApp.MLApp();
                     matlab.PutWorkspaceData("input", "base", inputarray);
-
-                    result = (matlab.Execute("simpleNN(transpose(input))")); 
-
+                    
+                    //result = (matlab.Execute("simpleNN(transpose(input))"));
+                    /*
                     char[] delimiters = new char[] { };
                     string[] parts = result.Split(delimiters,
                              StringSplitOptions.RemoveEmptyEntries);
@@ -411,9 +435,9 @@ namespace FaceTrackingBasics
                         float x = float.Parse(str);
                         Console.WriteLine(x);
                     }
-               */
-                    
-                } 
+                    */
+
+                }
             }
 
             private struct FaceModelTriangle
@@ -602,10 +626,11 @@ namespace FaceTrackingBasics
                             float xCoords = absfacePoints[absFaceCounter].X - topSkull.X;
                             float yCoords = absfacePoints[absFaceCounter].X - topSkull.X;
                             float zCoords = absfacePoints[absFaceCounter].X - topSkull.X;
-                            file.Write(xCoords + " " + yCoords + " " + zCoords+" ");       
+                            file.Write(xCoords + " " + yCoords + " " + zCoords + " ");
                         }
                         file.WriteLine();
-                        Console.WriteLine("Data Logged");
+                        logCounter++;
+                        Console.WriteLine("Data Logged     [" + logCounter + "]");
                     }
                 }
                 using (System.IO.StreamWriter TargetFile = new System.IO.StreamWriter(@"C:\Users\Bala\Desktop\Sophomore\Science Fair\Development and Optimization\Kinect\Targets.txt", true))
